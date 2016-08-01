@@ -77,22 +77,29 @@ modelfit_workflow.inputs.inputspec.contrasts = [('incongruent > congruent', 'T',
                                                  ('congruent right (house) > incongruent left (house)', 'T',
                                                  ['right_incongruent', 'left_incongruent'],
                                                  [1.0, -1.0]),
+                                                 ('left presentation > right presentation', 'T',
+                                                 ['left_incongruent', 'left_congruent', 'right_incongruent', 'right_congruent'],
+                                                 [1.0, 1.0, -1.0, -1.0]),
+                                                 ('right presentation > left presentation', 'T',
+                                                 ['righ_incongruent', 'righ_congruent', 'left_incongruent', 'left_congruent'],
+                                                 [1.0, 1.0, -1.0, -1.0]),
                                                  ('error > baseline', 'T',
                                                  ['error'],
                                                  [1.0]),
                                                  ('slow > baseline', 'T',
                                                  ['slow'],
-                                                 [1.0])                                               ]
+                                                 [1.0])]
 
 
 identity = pe.Node(util.IdentityInterface(fields=['subject_id', 'run']),
                                   name='identity')
 
-identity.iterables = [('subject_id', [1])]
+identity.iterables = [('subject_id', [2])]
 identity.inputs.run = [1,2,3, 4]
 
 templates = {'epi':'/home/gdholla1/data/simon_amsterdam/preprocessing_results/highpassed_files/_subject_id_{subject_id}/_fwhm_5.0/_addmean*/run{run}_dtype_mcf_mask_smooth_mask_gms_tempfilt_maths.nii.gz',
-            'mask':'/home/gdholla1/data/simon_amsterdam/preprocessing_results/mask/_subject_id_{subject_id}/_fwhm_5.0/_dilatemask0/run1_dtype_mcf_bet_thresh_dil.nii.gz'}
+            'mask':'/home/gdholla1/data/simon_amsterdam/preprocessing_results/mask/_subject_id_{subject_id}/_fwhm_5.0/_dilatemask0/run1_dtype_mcf_bet_thresh_dil.nii.gz',
+            'realignment_parameters':'/home/gdholla1/data/simon_amsterdam/preprocessing_results/motion_parameters/_subject_id_1/_fwhm_5.0/_realign*/run{run}*.par'}
 
 selector = pe.MapNode(nio.SelectFiles(templates), iterfield=['run'], name='selector')
 
@@ -164,6 +171,8 @@ meta_workflow.connect([
                    [('session_info', 'subject_info'),]),
                   (selector, specifymodel,
                   [('epi', 'functional_runs'),]),
+                  (selector, specifymodel,
+                  [('realignment_parameters', 'realignment_parameters'),]),
                   (specifymodel, modelfit_workflow,
                    [('session_info', 'inputspec.session_info'),])
                   ])

@@ -45,11 +45,12 @@ modelfit_workflow.inputs.inputspec.contrasts =  contrasts
 identity = pe.Node(util.IdentityInterface(fields=['subject_id', 'run']),
                                   name='identity')
 
-identity.iterables = [('subject_id', [1])]
+identity.iterables = [('subject_id', [2])]
 identity.inputs.run = [1,2,3,4, 5,6,7,8]
 
 templates = {'epi':'/home/gdholla1/data/simon_amsterdam/preprocessing_results/highpassed_files/_subject_id_{subject_id}/_fwhm_0.0/_addmean*/run{run}_dtype_mcf_mask_*.nii.gz',
-            'mask':'/home/gdholla1/data/simon_amsterdam/preprocessing_results/mask/_subject_id_{subject_id}/_fwhm_0.0/_dilatemask0/run1_dtype_mcf_bet_thresh_dil.nii.gz'}
+            'mask':'/home/gdholla1/data/simon_amsterdam/preprocessing_results/mask/_subject_id_{subject_id}/_fwhm_0.0/_dilatemask0/run1_dtype_mcf_bet_thresh_dil.nii.gz',
+            'realignment_parameters':'/home/gdholla1/data/simon_amsterdam/preprocessing_results/motion_parameters/_subject_id_1/_fwhm_0.0/_realign*/run{run}*.par'}
 
 selector = pe.MapNode(nio.SelectFiles(templates), iterfield=['run'], name='selector')
 
@@ -59,7 +60,7 @@ session_info_getter = pe.MapNode(util.Function(function=get_session_info,
                                      output_names=['session_info']),
                        iterfield=['run'],
                        name='session_info_getter')
-session_info_getter.iterables = [('shift', [-2.0])]
+session_info_getter.iterables = [('shift', [-2.0, 0.0])]
 
 
 meta_workflow.connect([(identity, selector,
@@ -86,6 +87,8 @@ meta_workflow.connect([
                    [('session_info', 'subject_info'),]),
                   (selector, specifymodel,
                   [('epi', 'functional_runs'),]),
+                  (selector, specifymodel,
+                  [('realignment_parameters', 'realignment_parameters'),]),
                   (specifymodel, modelfit_workflow,
                    [('session_info', 'inputspec.session_info'),])
                   ])
@@ -139,6 +142,6 @@ meta_workflow.connect(modelfit_workflow, 'outputspec.zfiles', ds, 'single_trial_
 meta_workflow.connect(modelfit_workflow, 'outputspec.copes', ds, 'single_trial_copes')
 meta_workflow.connect(modelfit_workflow, 'outputspec.parameter_estimates', ds, 'single_trial_parameter_estimates')
 
-meta_workflow.run()
-#meta_workflow.run(plugin='MultiProc', plugin_args={'n_procs':4})
+#meta_workflow.run()
+meta_workflow.run(plugin='MultiProc', plugin_args={'n_procs':4})
 
